@@ -69,6 +69,7 @@ class DictatorIndicator extends PanelMenu.Button {
         this._state = 'idle';
         this._proxy = null;
         this._signalIds = [];
+        this._shortcutRegistered = false;
 
         // Create icon
         this._icon = new St.Icon({
@@ -151,19 +152,36 @@ class DictatorIndicator extends PanelMenu.Button {
     }
 
     _registerShortcut() {
-        const settings = this._extension.getSettings();
+        // Avoid double registration
+        if (this._shortcutRegistered) {
+            return;
+        }
 
-        Main.wm.addKeybinding(
-            'shortcut',
-            settings,
-            Meta.KeyBindingFlags.NONE,
-            Shell.ActionMode.ALL,
-            () => this._toggle()
-        );
+        try {
+            const settings = this._extension.getSettings();
+
+            Main.wm.addKeybinding(
+                'shortcut',
+                settings,
+                Meta.KeyBindingFlags.NONE,
+                Shell.ActionMode.ALL,
+                () => this._toggle()
+            );
+            this._shortcutRegistered = true;
+        } catch (e) {
+            log(`Dictator: Failed to register shortcut: ${e.message}`);
+        }
     }
 
     _unregisterShortcut() {
-        Main.wm.removeKeybinding('shortcut');
+        if (this._shortcutRegistered) {
+            try {
+                Main.wm.removeKeybinding('shortcut');
+            } catch (e) {
+                log(`Dictator: Failed to unregister shortcut: ${e.message}`);
+            }
+            this._shortcutRegistered = false;
+        }
     }
 
     async _toggle() {
@@ -337,6 +355,12 @@ class DictatorIndicator extends PanelMenu.Button {
  */
 export default class DictatorExtension extends Extension {
     enable() {
+        // Ensure clean state
+        if (this._indicator) {
+            this._indicator.destroy();
+            this._indicator = null;
+        }
+
         this._indicator = new DictatorIndicator(this);
         Main.panel.addToStatusArea('dictator', this._indicator);
     }
