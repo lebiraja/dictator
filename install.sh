@@ -33,6 +33,7 @@ SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 # Flags
 FULL_INSTALL=false
 SKIP_DEPS=false
+BACKEND_ONLY=false
 
 # Parse arguments
 for arg in "$@"; do
@@ -45,15 +46,20 @@ for arg in "$@"; do
             SKIP_DEPS=true
             shift
             ;;
+        --backend-only)
+            BACKEND_ONLY=true
+            shift
+            ;;
         --help|-h)
             echo "Dictator Installation Script"
             echo ""
             echo "Usage: ./install.sh [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --full       Full installation including uinput setup (requires sudo)"
-            echo "  --skip-deps  Skip system dependency checks"
-            echo "  -h, --help   Show this help message"
+            echo "  --full         Full installation including uinput setup (requires sudo)"
+            echo "  --backend-only Install only the Python backend (for GNOME Extensions users)"
+            echo "  --skip-deps    Skip system dependency checks"
+            echo "  -h, --help     Show this help message"
             echo ""
             exit 0
             ;;
@@ -267,8 +273,10 @@ fi
 print_header "Installing Dictator"
 
 print_step "Creating directories..."
-mkdir -p "$EXTENSION_DIR"
-mkdir -p "$EXTENSION_DIR/schemas"
+if [ "$BACKEND_ONLY" = false ]; then
+    mkdir -p "$EXTENSION_DIR"
+    mkdir -p "$EXTENSION_DIR/schemas"
+fi
 mkdir -p "$SERVICE_DIR"
 mkdir -p "$DBUS_SERVICE_DIR"
 mkdir -p "$SYSTEMD_USER_DIR"
@@ -302,16 +310,20 @@ print_success "Python environment ready"
 # INSTALL EXTENSION
 # ============================================================================
 
-print_step "Installing GNOME Shell extension..."
-cp "$PROJECT_DIR/extension/extension.js" "$EXTENSION_DIR/"
-cp "$PROJECT_DIR/extension/metadata.json" "$EXTENSION_DIR/"
-cp "$PROJECT_DIR/extension/stylesheet.css" "$EXTENSION_DIR/"
-cp "$PROJECT_DIR/extension/schemas/"*.xml "$EXTENSION_DIR/schemas/"
+if [ "$BACKEND_ONLY" = false ]; then
+    print_step "Installing GNOME Shell extension..."
+    cp "$PROJECT_DIR/extension/extension.js" "$EXTENSION_DIR/"
+    cp "$PROJECT_DIR/extension/metadata.json" "$EXTENSION_DIR/"
+    cp "$PROJECT_DIR/extension/stylesheet.css" "$EXTENSION_DIR/"
+    cp "$PROJECT_DIR/extension/schemas/"*.xml "$EXTENSION_DIR/schemas/"
 
-print_step "Compiling GSettings schemas..."
-glib-compile-schemas "$EXTENSION_DIR/schemas/"
+    print_step "Compiling GSettings schemas..."
+    glib-compile-schemas "$EXTENSION_DIR/schemas/"
 
-print_success "Extension installed"
+    print_success "Extension installed"
+else
+    print_step "Skipping extension (backend-only mode)"
+fi
 
 # ============================================================================
 # INSTALL SERVICE
@@ -341,12 +353,17 @@ print_success "Service installed"
 # ENABLE EXTENSION
 # ============================================================================
 
-print_step "Enabling extension..."
-gnome-extensions enable dictator@lebi 2>/dev/null || {
-    print_warning "Could not enable extension automatically."
-    print_warning "You may need to log out and back in, then run:"
-    print_warning "  gnome-extensions enable dictator@lebi"
-}
+if [ "$BACKEND_ONLY" = false ]; then
+    print_step "Enabling extension..."
+    gnome-extensions enable dictator@lebi 2>/dev/null || {
+        print_warning "Could not enable extension automatically."
+        print_warning "You may need to log out and back in, then run:"
+        print_warning "  gnome-extensions enable dictator@lebi"
+    }
+else
+    print_step "Skipping extension enable (backend-only mode)"
+    print_step "Install the extension from GNOME Extensions website"
+fi
 
 # ============================================================================
 # FINAL STATUS

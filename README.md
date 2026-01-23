@@ -1,56 +1,85 @@
 # Dictator
 
-A system-wide voice dictation application for GNOME on Linux. Press a keyboard shortcut to record your speech, and it will be transcribed locally using AI and automatically typed into any focused application.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lebiraja/dictator/main/assets/icon.svg" width="128" height="128" alt="Dictator Icon">
+</p>
+
+<p align="center">
+  <strong>System-wide voice dictation for GNOME on Linux</strong>
+</p>
+
+<p align="center">
+  <a href="https://extensions.gnome.org/extension/XXXX/dictator/">
+    <img src="https://img.shields.io/badge/GNOME%20Extensions-Install-blue?logo=gnome" alt="Get it on GNOME Extensions">
+  </a>
+  <a href="https://github.com/lebiraja/dictator/releases">
+    <img src="https://img.shields.io/github/v/release/lebiraja/dictator" alt="GitHub Release">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/lebiraja/dictator" alt="License">
+  </a>
+</p>
+
+---
+
+Press a keyboard shortcut to record your speech, and it will be transcribed locally using AI and automatically typed into any focused application.
 
 **Privacy-first**: All processing happens locally on your machine. No audio is sent to the cloud.
 
 ## Features
 
-- **Global keyboard shortcut** (Ctrl+Shift+Space) to toggle recording
-- **Local AI transcription** using OpenAI's Whisper model via faster-whisper
-- **Works everywhere** - types directly into any application (browsers, editors, terminals)
-- **Wayland & X11 compatible** - uses kernel-level input injection
-- **Visual feedback** - panel icon and overlay show recording status
-- **Fully offline** - no internet required after initial model download (~140MB)
-- **GPU acceleration** - automatically uses CUDA if available, falls back to CPU
+- 🎤 **Global keyboard shortcut** (Ctrl+Shift+Space) to toggle recording
+- 🤖 **Local AI transcription** using OpenAI's Whisper model
+- ⌨️ **Works everywhere** - types directly into any application
+- 🖥️ **Wayland & X11 compatible** - uses kernel-level input injection
+- 👁️ **Visual feedback** - panel icon and overlay show recording status
+- 🔒 **Fully offline** - no internet required after initial setup
+- ⚡ **GPU acceleration** - uses CUDA if available, falls back to CPU
 
-## Requirements
+## Demo
 
-- **GNOME Shell 45+** (Ubuntu 24.04+, Fedora 40+, etc.)
-- **PipeWire** (default on most modern Linux distros)
-- **Python 3.10+**
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lebiraja/dictator/main/assets/demo.gif" alt="Dictator Demo" width="600">
+</p>
 
-## Quick Start
+## Installation
 
-### One-Command Installation
+### Method 1: Quick Install (Recommended)
 
 ```bash
-git clone https://github.com/lebi/dictator.git
+git clone https://github.com/lebiraja/dictator.git
 cd dictator
 ./install.sh --full
 ```
 
-The `--full` flag sets up everything including uinput permissions (requires sudo).
+Then **log out and log back in**.
 
-After installation, **log out and log back in**, then press **Ctrl+Shift+Space** to start dictating!
+### Method 2: GNOME Extensions + Manual Backend
 
-### Manual Installation
+1. **Install the extension** from [GNOME Extensions](https://extensions.gnome.org/extension/XXXX/dictator/)
 
-If you prefer more control:
+2. **Install the backend service:**
+   ```bash
+   git clone https://github.com/lebiraja/dictator.git
+   cd dictator
+   ./install.sh --backend-only
+   ```
 
-```bash
-# Clone the repository
-git clone https://github.com/lebi/dictator.git
-cd dictator
+3. **Set up permissions and restart:**
+   ```bash
+   sudo ./scripts/setup_uinput.sh
+   # Log out and log back in
+   ```
 
-# Install without uinput setup
-./install.sh
+### Method 3: From GitHub Releases
 
-# Set up uinput separately (requires sudo)
-sudo ./scripts/setup_uinput.sh
-
-# Log out and back in for group membership to take effect
-```
+1. Download the latest release from [Releases](https://github.com/lebiraja/dictator/releases)
+2. Extract and run:
+   ```bash
+   tar -xzf dictator-*.tar.gz
+   cd dictator
+   ./install.sh --full
+   ```
 
 ## Usage
 
@@ -59,27 +88,17 @@ sudo ./scripts/setup_uinput.sh
 3. **Press `Ctrl+Shift+Space`** again to stop
 4. The transcribed text is automatically typed into the focused application
 
-You can also click the microphone icon in the top panel to access controls.
-
 ### First Run
 
-On first use, the Whisper model (~140MB) will be downloaded automatically. This only happens once.
+On first use, the Whisper AI model (~140MB) will download automatically. This only happens once.
 
-## System Requirements
+## Requirements
 
-### Supported Distributions
+- **GNOME Shell 45+** (Ubuntu 24.04+, Fedora 40+, Arch, etc.)
+- **PipeWire** (default on most modern distros)
+- **Python 3.10+**
 
-| Distribution | Version | Status |
-|-------------|---------|--------|
-| Ubuntu | 24.04+ | ✅ Tested |
-| Fedora | 40+ | ✅ Tested |
-| Arch Linux | Rolling | ✅ Tested |
-| Debian | 13+ | Should work |
-| Pop!_OS | 24.04+ | Should work |
-
-### Dependencies
-
-The install script will check for these and guide you to install any missing:
+### Installing Dependencies
 
 **Ubuntu/Debian:**
 ```bash
@@ -101,212 +120,105 @@ sudo pacman -S python python-pip pipewire glib2 libevdev
 ### Changing the Keyboard Shortcut
 
 ```bash
-# View current shortcut
-gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schemas \
-  get org.gnome.shell.extensions.dictator shortcut
-
 # Change to Super+D
 gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schemas \
   set org.gnome.shell.extensions.dictator shortcut "['<Super>d']"
-
-# Change to Ctrl+Alt+V
-gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schemas \
-  set org.gnome.shell.extensions.dictator shortcut "['<Control><Alt>v']"
 ```
 
 ### Available Settings
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `shortcut` | string array | `['<Control><Shift>space']` | Keyboard shortcut |
-| `model` | string | `base.en` | Whisper model size |
-| `show-overlay` | boolean | `true` | Show visual overlay |
-| `show-notifications` | boolean | `true` | Show notifications |
-
-### Whisper Models
-
-| Model | Size | Speed | Accuracy |
-|-------|------|-------|----------|
-| `tiny.en` | ~75MB | Fastest | Good |
-| `base.en` | ~140MB | Fast | Better (default) |
-| `small.en` | ~460MB | Slower | Best |
-
-## Architecture
-
-```
-┌──────────────────────────────────────┐
-│   GNOME Shell Extension              │
-│   • Panel indicator                  │
-│   • Keyboard shortcut (Ctrl+Shift+Space)
-│   • Recording overlay                │
-└─────────────────┬────────────────────┘
-                  │ D-Bus IPC
-                  ▼
-┌──────────────────────────────────────┐
-│   Python D-Bus Service               │
-│   • State machine                    │
-│   • Orchestration                    │
-└───────┬──────────┬──────────┬────────┘
-        │          │          │
-        ▼          ▼          ▼
-   ┌────────┐ ┌─────────┐ ┌───────┐
-   │Recorder│ │Transcri-│ │ Typer │
-   │        │ │  ber    │ │       │
-   └────────┘ └─────────┘ └───────┘
-        │          │          │
-        ▼          ▼          ▼
-   PipeWire    Whisper    /dev/uinput
-   (pw-record)  (AI)      (keyboard)
-```
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `shortcut` | `Ctrl+Shift+Space` | Keyboard shortcut |
+| `model` | `base.en` | Whisper model (tiny.en, base.en, small.en) |
+| `show-overlay` | `true` | Show visual overlay when recording |
+| `show-notifications` | `true` | Show notifications |
 
 ## Troubleshooting
 
 ### Shortcut not working
 
 ```bash
-# Check extension status
-gnome-extensions show dictator@lebi
-
 # Reload extension
 gnome-extensions disable dictator@lebi
 gnome-extensions enable dictator@lebi
 ```
 
-On Wayland, you may need to log out and back in.
+On Wayland, log out and back in.
 
 ### "No speech detected"
 
-1. Check your microphone is set as default input
-2. Test PipeWire is working:
-   ```bash
-   pw-record --format s16 --rate 16000 --channels 1 test.wav
-   # Speak, then Ctrl+C
-   # File should be > 1KB
-   ```
+Check your microphone:
+```bash
+pw-record --format s16 --rate 16000 --channels 1 test.wav
+# Speak, then Ctrl+C - file should be > 1KB
+```
 
 ### Permission denied for /dev/uinput
 
 ```bash
-# Run uinput setup
 sudo ./scripts/setup_uinput.sh
-
-# Verify group membership (after re-login)
-groups | grep uinput
-
-# Check device permissions
-ls -la /dev/uinput
-# Should show: crw-rw---- 1 root uinput
+# Log out and log back in
+groups | grep uinput  # Should show uinput
 ```
 
-### Service errors
+### Check logs
 
 ```bash
-# Check service logs
 journalctl --user | grep -i dictator | tail -30
-
-# Test D-Bus manually
-dbus-send --session --print-reply --dest=org.lebi.Dictator \
-  /org/lebi/Dictator org.lebi.Dictator.GetState
 ```
 
-### CUDA/GPU issues
-
-If you see `libcublas.so.12 not found`, the app will automatically fall back to CPU. For GPU acceleration, ensure NVIDIA drivers are installed:
-
-```bash
-# Check NVIDIA driver
-nvidia-smi
-
-# Reinstall CUDA libraries
-~/.local/share/dictator/venv/bin/pip install --force-reinstall nvidia-cublas-cu12 nvidia-cudnn-cu12
-```
-
-## Uninstallation
-
-```bash
-./scripts/uninstall.sh
-```
-
-Or manually:
-```bash
-# Remove extension
-rm -rf ~/.local/share/gnome-shell/extensions/dictator@lebi
-
-# Remove service
-rm -rf ~/.local/share/dictator
-rm ~/.local/share/dbus-1/services/org.lebi.Dictator.service
-rm ~/.config/systemd/user/dictator.service
-
-# Disable extension
-gnome-extensions disable dictator@lebi
-```
-
-## Development
-
-### Project Structure
+## Architecture
 
 ```
-dictate/
-├── extension/                 # GNOME Shell extension
-│   ├── extension.js           # Main extension code
-│   ├── metadata.json          # Extension metadata
-│   ├── stylesheet.css         # UI styling
-│   └── schemas/               # GSettings schema
-├── service/                   # Python D-Bus service
-│   ├── dictator_service.py    # Main service entry point
-│   ├── recorder.py            # Audio recording via PipeWire
-│   ├── transcriber.py         # Whisper transcription
-│   └── typer.py               # Virtual keyboard input
-├── scripts/                   # Utility scripts
-│   ├── install.sh             # Legacy installer
-│   ├── uninstall.sh           # Uninstaller
-│   └── setup_uinput.sh        # uinput permission setup
-├── systemd/                   # Systemd service file
-├── install.sh                 # Main installer
-└── README.md
+┌────────────────────────────────────┐
+│     GNOME Shell Extension          │
+│  • Panel indicator                 │
+│  • Keyboard shortcut               │
+│  • Visual overlay                  │
+└──────────────┬─────────────────────┘
+               │ D-Bus
+               ▼
+┌────────────────────────────────────┐
+│     Python D-Bus Service           │
+└──────┬───────────┬───────────┬─────┘
+       ▼           ▼           ▼
+   Recorder    Transcriber   Typer
+   (PipeWire)   (Whisper)   (uinput)
 ```
-
-### Running from Source
-
-```bash
-# Create venv and install deps
-python3 -m venv venv
-source venv/bin/activate
-pip install dbus-next evdev faster-whisper
-
-# Run service
-python service/dictator_service.py
-
-# Test via D-Bus
-dbus-send --session --print-reply --dest=org.lebi.Dictator \
-  /org/lebi/Dictator org.lebi.Dictator.Toggle
-```
-
-### D-Bus API
-
-Service: `org.lebi.Dictator`
-Path: `/org/lebi/Dictator`
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `Toggle()` | string | Toggle recording, returns new state |
-| `StartRecording()` | boolean | Start recording |
-| `StopRecording()` | string | Stop and transcribe |
-| `Cancel()` | boolean | Cancel operation |
-| `GetState()` | string | Current state |
-
-States: `idle` → `recording` → `transcribing` → `typing` → `idle`
 
 ## Contributing
 
-Contributions welcome! Please open an issue or PR on GitHub.
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## Roadmap
+
+- [ ] Preferences UI (GTK settings dialog)
+- [ ] Multi-language support
+- [ ] Clipboard mode option
+- [ ] Dictation history
+- [ ] Voice commands (punctuation, formatting)
+- [ ] Quick Settings integration
 
 ## License
 
-MIT License - see LICENSE file.
+MIT License - see [LICENSE](LICENSE)
 
 ## Acknowledgments
 
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper) - Optimized Whisper implementation
 - [python-evdev](https://github.com/gvalkov/python-evdev) - Linux input device library
-- [dbus-next](https://github.com/altdesktop/python-dbus-next) - Modern async D-Bus library
+- [dbus-next](https://github.com/altdesktop/python-dbus-next) - Async D-Bus library
+
+---
+
+<p align="center">
+  Made with ❤️ for the Linux community
+</p>
