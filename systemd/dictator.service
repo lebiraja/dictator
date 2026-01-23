@@ -1,0 +1,16 @@
+[Unit]
+Description=Dictator - GNOME Dictation Service
+Documentation=https://github.com/lebi/dictator
+After=graphical-session.target
+
+[Service]
+Type=dbus
+BusName=org.lebi.Dictator
+ExecStart=%h/.local/share/dictator/venv/bin/python3 %h/.local/share/dictator/service/dictator_service.py
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target

@@ -2,3 +2,5 @@ models/
 __pycache__/
 *.pyc
 /tmp/dictator_*
+venv/
+.claude/

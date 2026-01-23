@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="dictator">
+  <schema id="org.gnome.shell.extensions.dictator" path="/org/gnome/shell/extensions/dictator/">
+
+    <key name="shortcut" type="as">
+      <default>['&lt;Super&gt;h']</default>
+      <summary>Toggle dictation shortcut</summary>
+      <description>Keyboard shortcut to start/stop dictation</description>
+    </key>
+
+    <key name="output-mode" type="s">
+      <default>'clipboard'</default>
+      <summary>Output mode</summary>
+      <description>How to output transcribed text: 'clipboard' or 'type' (X11 only)</description>
+    </key>
+
+    <key name="model" type="s">
+      <default>'base.en'</default>
+      <summary>Whisper model</summary>
+      <description>Which Whisper model to use: 'tiny.en', 'base.en', or 'small.en'</description>
+    </key>
+
+    <key name="show-overlay" type="b">
+      <default>true</default>
+      <summary>Show overlay</summary>
+      <description>Show a visual overlay when recording</description>
+    </key>
+
+    <key name="show-notifications" type="b">
+      <default>true</default>
+      <summary>Show notifications</summary>
+      <description>Show notifications for transcription results and errors</description>
+    </key>
+
+  </schema>
+</schemalist>
