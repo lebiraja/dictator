@@ -230,9 +230,10 @@ class DictatorService(ServiceInterface):
             New state after toggle.
         """
         if self._state == State.IDLE:
-            await self.StartRecording()
+            # Call the internal logic directly, not the D-Bus method
+            await self._start_recording_internal()
         elif self._state == State.RECORDING:
-            await self.StopRecording()
+            await self._stop_recording_internal()
         # If transcribing or downloading, do nothing
         return self._state.value
 
