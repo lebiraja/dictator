@@ -1,6 +1,35 @@
-models/
+# Python
 __pycache__/
-*.pyc
-/tmp/dictator_*
+*.py[cod]
+*$py.class
+*.so
+.Python
 venv/
+ENV/
+.venv/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+models/
+/tmp/dictator_*
+*.wav
+*.mp3
+*.log
+
+# Claude
 .claude/
