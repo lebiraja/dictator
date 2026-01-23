@@ -81,13 +81,8 @@ class DictatorService(ServiceInterface):
         """Emitted when an error occurs."""
         return message
 
-    @method()
-    async def StartRecording(self) -> "b":
-        """Start audio recording.
-
-        Returns:
-            True if recording started successfully.
-        """
+    async def _do_start_recording(self) -> bool:
+        """Internal: Start audio recording."""
         if self._state != State.IDLE:
             self._last_error = f"Cannot start: currently {self._state.value}"
             self.Error(self._last_error)
@@ -107,13 +102,8 @@ class DictatorService(ServiceInterface):
             self.Error(self._last_error)
             return False
 
-    @method()
-    async def StopRecording(self) -> "s":
-        """Stop recording, transcribe, and type.
-
-        Returns:
-            Transcribed text, or empty string on error.
-        """
+    async def _do_stop_recording(self) -> str:
+        """Internal: Stop recording, transcribe, and type."""
         if self._state != State.RECORDING:
             self._last_error = f"Cannot stop: not recording (state={self._state.value})"
             self.Error(self._last_error)
@@ -155,6 +145,24 @@ class DictatorService(ServiceInterface):
             return ""
 
     @method()
+    async def StartRecording(self) -> "b":
+        """Start audio recording.
+
+        Returns:
+            True if recording started successfully.
+        """
+        return await self._do_start_recording()
+
+    @method()
+    async def StopRecording(self) -> "s":
+        """Stop recording, transcribe, and type.
+
+        Returns:
+            Transcribed text, or empty string on error.
+        """
+        return await self._do_stop_recording()
+
+    @method()
     async def Cancel(self) -> "b":
         """Cancel current operation.
 
@@ -191,9 +199,9 @@ class DictatorService(ServiceInterface):
             New state after toggle.
         """
         if self._state == State.IDLE:
-            await self.StartRecording()
+            await self._do_start_recording()
         elif self._state == State.RECORDING:
-            await self.StopRecording()
+            await self._do_stop_recording()
         # If transcribing or typing, do nothing
         return self._state.value
 

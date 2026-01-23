@@ -1,7 +1,7 @@
 {
   "uuid": "dictator@lebi",
   "name": "Dictator",
-  "description": "System-wide voice dictation using local Whisper AI. Press Super+H to toggle recording, transcription is copied to clipboard.",
+  "description": "System-wide voice dictation using local Whisper AI. Press Ctrl+Shift+Space to toggle recording, transcription is copied to clipboard.",
   "version": 1,
   "shell-version": ["45", "46", "47", "48"],
   "settings-schema": "org.gnome.shell.extensions.dictator",

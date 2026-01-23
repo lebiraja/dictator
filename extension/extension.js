@@ -2,7 +2,7 @@
  * Dictator GNOME Shell Extension
  *
  * System-wide voice dictation using Whisper.
- * Press Super+H to toggle recording.
+ * Press Ctrl+Shift+Space to toggle recording.
  */
 
 import Gio from 'gi://Gio';
