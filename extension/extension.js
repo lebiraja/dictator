@@ -10,6 +10,8 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -38,9 +40,6 @@ const DictatorIface = `
     <method name="GetState">
       <arg type="s" direction="out" name="state"/>
     </method>
-    <method name="EnsureModel">
-      <arg type="b" direction="out" name="success"/>
-    </method>
     <signal name="StateChanged">
       <arg type="s" name="state"/>
     </signal>
@@ -50,13 +49,7 @@ const DictatorIface = `
     <signal name="Error">
       <arg type="s" name="message"/>
     </signal>
-    <signal name="DownloadProgress">
-      <arg type="x" name="downloaded"/>
-      <arg type="x" name="total"/>
-    </signal>
     <property name="State" type="s" access="read"/>
-    <property name="IsModelAvailable" type="b" access="read"/>
-    <property name="IsWhisperAvailable" type="b" access="read"/>
   </interface>
 </node>
 `;
@@ -115,7 +108,7 @@ class DictatorIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         // Settings/info section
-        this._modelStatusItem = new PopupMenu.PopupMenuItem(_('Checking model...'), { reactive: false });
+        this._modelStatusItem = new PopupMenu.PopupMenuItem(_('Ready'), { reactive: false });
         this.menu.addMenuItem(this._modelStatusItem);
     }
 
@@ -146,18 +139,9 @@ class DictatorIndicator extends PanelMenu.Button {
                 })
             );
 
-            this._signalIds.push(
-                this._proxy.connectSignal('DownloadProgress', (proxy, sender, [downloaded, total]) => {
-                    this._onDownloadProgress(downloaded, total);
-                })
-            );
-
             // Get initial state
-            const state = await this._proxy.GetStateAsync();
+            const [state] = await this._proxy.GetStateAsync();
             this._onStateChanged(state);
-
-            // Check model status
-            this._updateModelStatus();
 
         } catch (e) {
             log(`Dictator: Failed to connect to service: ${e.message}`);
@@ -166,35 +150,14 @@ class DictatorIndicator extends PanelMenu.Button {
         }
     }
 
-    async _updateModelStatus() {
-        if (!this._proxy)
-            return;
-
-        try {
-            const modelAvailable = this._proxy.IsModelAvailable;
-            const whisperAvailable = this._proxy.IsWhisperAvailable;
-
-            if (!whisperAvailable) {
-                this._modelStatusItem.label.text = _('whisper.cpp not found');
-            } else if (!modelAvailable) {
-                this._modelStatusItem.label.text = _('Model will download on first use');
-            } else {
-                this._modelStatusItem.label.text = _('Ready');
-            }
-        } catch (e) {
-            this._modelStatusItem.label.text = _('Error checking status');
-        }
-    }
-
     _registerShortcut() {
         const settings = this._extension.getSettings();
-        const shortcut = settings.get_strv('shortcut');
 
         Main.wm.addKeybinding(
             'shortcut',
             settings,
-            0, // Meta.KeyBindingFlags.NONE
-            1, // Shell.ActionMode.ALL
+            Meta.KeyBindingFlags.NONE,
+            Shell.ActionMode.ALL,
             () => this._toggle()
         );
     }
@@ -285,11 +248,6 @@ class DictatorIndicator extends PanelMenu.Button {
 
     _onError(message) {
         this._showNotification(_('Dictator Error'), message);
-    }
-
-    _onDownloadProgress(downloaded, total) {
-        const percent = Math.round((downloaded / total) * 100);
-        this._statusItem.label.text = _('Downloading: %d%%').format(percent);
     }
 
     _showNotification(title, body) {
