@@ -217,21 +217,51 @@ else
     ERRORS=$((ERRORS + 1))
 fi
 
-# Check Python
-if check_command python3; then
-    PYTHON_VERSION=$(python3 --version 2>/dev/null | grep -oP '\d+\.\d+' || echo "unknown")
-    print_success "Python $PYTHON_VERSION"
+# Check Python - need 3.10-3.13 for faster-whisper/onnxruntime compatibility
+PYTHON_CMD=""
+for v in python3.13 python3.12 python3.11 python3.10; do
+    if command -v "$v" &>/dev/null; then
+        PYTHON_CMD="$v"
+        break
+    fi
+done
+
+# Fall back to python3 if it's in the compatible range
+if [ -z "$PYTHON_CMD" ] && check_command python3; then
+    PY_MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)' 2>/dev/null || echo "99")
+    if [ "$PY_MINOR" -ge 10 ] && [ "$PY_MINOR" -le 13 ] 2>/dev/null; then
+        PYTHON_CMD="python3"
+    fi
+fi
+
+if [ -n "$PYTHON_CMD" ]; then
+    PYTHON_VERSION=$($PYTHON_CMD --version 2>/dev/null | grep -oP '\d+\.\d+' || echo "unknown")
+    print_success "Python $PYTHON_VERSION ($PYTHON_CMD)"
 else
-    print_error "Python 3 not found"
+    SYSTEM_PY=$(python3 --version 2>/dev/null | grep -oP '\d+\.\d+' || echo "unknown")
+    print_error "Python 3.10-3.13 required (found $SYSTEM_PY)"
+    echo ""
+    echo -e "  ${YELLOW}Python $SYSTEM_PY is too new for faster-whisper dependencies.${NC}"
+    echo -e "  ${YELLOW}Install a compatible version:${NC}"
+    if check_command dnf; then
+        echo -e "    ${CYAN}sudo dnf install python3.13${NC}"
+    elif check_command apt; then
+        echo -e "    ${CYAN}sudo apt install python3.12${NC}"
+    elif check_command pacman; then
+        echo -e "    ${CYAN}sudo pacman -S python${NC}"
+    fi
+    echo ""
     ERRORS=$((ERRORS + 1))
 fi
 
-# Check python3-venv
-if python3 -m venv --help &>/dev/null; then
-    print_success "python3-venv"
-else
-    print_error "python3-venv not found"
-    ERRORS=$((ERRORS + 1))
+# Check python3-venv (only if we found a compatible Python)
+if [ -n "$PYTHON_CMD" ]; then
+    if "$PYTHON_CMD" -m venv --help &>/dev/null; then
+        print_success "python3-venv"
+    else
+        print_error "python3-venv not found for $PYTHON_CMD"
+        ERRORS=$((ERRORS + 1))
+    fi
 fi
 
 # Check PipeWire
@@ -365,12 +395,28 @@ print_step "Setting up Python environment..."
 
 if [ ! -d "$VENV_DIR" ]; then
     print_substep "Creating virtual environment..."
-    python3 -m venv "$VENV_DIR"
+    "$PYTHON_CMD" -m venv "$VENV_DIR"
 fi
 
 print_substep "Installing Python packages..."
 "$VENV_DIR/bin/pip" install --upgrade pip --quiet 2>/dev/null
-"$VENV_DIR/bin/pip" install dbus-next evdev faster-whisper --quiet 2>/dev/null
+
+if ! "$VENV_DIR/bin/pip" install dbus-next evdev faster-whisper --quiet 2>&1; then
+    echo ""
+    print_error "Failed to install Python packages!"
+    echo ""
+    echo -e "  ${YELLOW}This may be due to missing build dependencies.${NC}"
+    echo -e "  ${YELLOW}Install them and retry:${NC}"
+    if check_command dnf; then
+        echo -e "    ${CYAN}sudo dnf install python${PYTHON_VERSION}-devel libevdev-devel${NC}"
+    elif check_command apt; then
+        echo -e "    ${CYAN}sudo apt install python${PYTHON_VERSION}-dev libevdev-dev${NC}"
+    elif check_command pacman; then
+        echo -e "    ${CYAN}sudo pacman -S python libevdev${NC}"
+    fi
+    echo ""
+    exit 1
+fi
 
 # Check for NVIDIA GPU
 if check_command nvidia-smi; then
