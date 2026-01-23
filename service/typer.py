@@ -1,7 +1,7 @@
 import time
 import logging
 from typing import Optional
-from evdev import UInput, ecodes as e
+from evdev import UInput, ecodes as ec
 
 logger = logging.getLogger("dictator.typer")
 
@@ -18,44 +18,44 @@ class Typer:
         # or a library that handles layout, but evdev operates on keycodes, not characters.
         # We'll implement a basic ASCII mapping for now.
         self._char_map = {
-            ' ': e.KEY_SPACE,
-            '\n': e.KEY_ENTER,
-            '.': e.KEY_DOT,
-            ',': e.KEY_COMMA,
-            '?': e.KEY_SLASH, # Shift+Slash usually
-            '!': e.KEY_1,     # Shift+1
-            '-': e.KEY_MINUS,
-            '_': e.KEY_MINUS, # Shift+Minus
-            "'": e.KEY_APOSTROPHE,
-            '"': e.KEY_APOSTROPHE, # Shift+Apostrophe
+            ' ': ec.KEY_SPACE,
+            '\n': ec.KEY_ENTER,
+            '.': ec.KEY_DOT,
+            ',': ec.KEY_COMMA,
+            '?': ec.KEY_SLASH, # Shift+Slash usually
+            '!': ec.KEY_1,     # Shift+1
+            '-': ec.KEY_MINUS,
+            '_': ec.KEY_MINUS, # Shift+Minus
+            "'": ec.KEY_APOSTROPHE,
+            '"': ec.KEY_APOSTROPHE, # Shift+Apostrophe
             # Numbers
-            '0': e.KEY_0, '1': e.KEY_1, '2': e.KEY_2, '3': e.KEY_3,
-            '4': e.KEY_4, '5': e.KEY_5, '6': e.KEY_6, '7': e.KEY_7,
-            '8': e.KEY_8, '9': e.KEY_9,
+            '0': ec.KEY_0, '1': ec.KEY_1, '2': ec.KEY_2, '3': ec.KEY_3,
+            '4': ec.KEY_4, '5': ec.KEY_5, '6': ec.KEY_6, '7': ec.KEY_7,
+            '8': ec.KEY_8, '9': ec.KEY_9,
         }
 
         # Add lowercase letters
         for i, char in enumerate('abcdefghijklmnopqrstuvwxyz'):
-            self._char_map[char] = getattr(e, f'KEY_{char.upper()}')
+            self._char_map[char] = getattr(ec, f'KEY_{char.upper()}')
 
         # Add uppercase letters (same keycodes, but we'll handle Shift separately)
         for i, char in enumerate('ABCDEFGHIJKLMNOPQRSTUVWXYZ'):
-            self._char_map[char] = getattr(e, f'KEY_{char}')
+            self._char_map[char] = getattr(ec, f'KEY_{char}')
 
     def _ensure_uinput(self):
         """Initialize UInput device if not already done."""
         if self._uinput is None:
             try:
                 cap = {
-                    e.EV_KEY: [e.KEY_LEFTSHIFT] + list(self._char_map.values())
+                    ec.EV_KEY: [ec.KEY_LEFTSHIFT] + list(self._char_map.values())
                 }
                 self._uinput = UInput(cap, name="Dictator Virtual Keyboard")
                 logger.info("Initialized virtual keyboard")
             except PermissionError:
                 logger.error("Permission denied accessing /dev/uinput. Ensure udev rules are set.")
                 raise
-            except Exception as e:
-                logger.error(f"Failed to initialize UInput: {e}")
+            except Exception as err:
+                logger.error(f"Failed to initialize UInput: {err}")
                 raise
 
     def type_text(self, text: str):
@@ -77,38 +77,38 @@ class Typer:
                     # Special handling for some punctuation that requires shift on standard US layout
                     if char in '?!":_+{}|<>@#$%^&*()':
                         is_upper = True
-                        if char == '?': keycode = e.KEY_SLASH
-                        elif char == '!': keycode = e.KEY_1
-                        elif char == '@': keycode = e.KEY_2
-                        elif char == '#': keycode = e.KEY_3
-                        elif char == '$': keycode = e.KEY_4
-                        elif char == '%': keycode = e.KEY_5
-                        elif char == '^': keycode = e.KEY_6
-                        elif char == '&': keycode = e.KEY_7
-                        elif char == '*': keycode = e.KEY_8
-                        elif char == '(': keycode = e.KEY_9
-                        elif char == ')': keycode = e.KEY_0
-                        elif char == '_': keycode = e.KEY_MINUS
-                        elif char == '+': keycode = e.KEY_EQUAL
-                        elif char == '{': keycode = e.KEY_LEFTBRACE
-                        elif char == '}': keycode = e.KEY_RIGHTBRACE
-                        elif char == '|': keycode = e.KEY_BACKSLASH
-                        elif char == ':': keycode = e.KEY_SEMICOLON
-                        elif char == '"': keycode = e.KEY_APOSTROPHE
-                        elif char == '<': keycode = e.KEY_COMMA
-                        elif char == '>': keycode = e.KEY_DOT
+                        if char == '?': keycode = ec.KEY_SLASH
+                        elif char == '!': keycode = ec.KEY_1
+                        elif char == '@': keycode = ec.KEY_2
+                        elif char == '#': keycode = ec.KEY_3
+                        elif char == '$': keycode = ec.KEY_4
+                        elif char == '%': keycode = ec.KEY_5
+                        elif char == '^': keycode = ec.KEY_6
+                        elif char == '&': keycode = ec.KEY_7
+                        elif char == '*': keycode = ec.KEY_8
+                        elif char == '(': keycode = ec.KEY_9
+                        elif char == ')': keycode = ec.KEY_0
+                        elif char == '_': keycode = ec.KEY_MINUS
+                        elif char == '+': keycode = ec.KEY_EQUAL
+                        elif char == '{': keycode = ec.KEY_LEFTBRACE
+                        elif char == '}': keycode = ec.KEY_RIGHTBRACE
+                        elif char == '|': keycode = ec.KEY_BACKSLASH
+                        elif char == ':': keycode = ec.KEY_SEMICOLON
+                        elif char == '"': keycode = ec.KEY_APOSTROPHE
+                        elif char == '<': keycode = ec.KEY_COMMA
+                        elif char == '>': keycode = ec.KEY_DOT
 
                     if is_upper:
-                        self._uinput.write(e.EV_KEY, e.KEY_LEFTSHIFT, 1)
+                        self._uinput.write(ec.EV_KEY, ec.KEY_LEFTSHIFT, 1)
                         self._uinput.syn()
 
-                    self._uinput.write(e.EV_KEY, keycode, 1) # Press
+                    self._uinput.write(ec.EV_KEY, keycode, 1) # Press
                     self._uinput.syn()
-                    self._uinput.write(e.EV_KEY, keycode, 0) # Release
+                    self._uinput.write(ec.EV_KEY, keycode, 0) # Release
                     self._uinput.syn()
 
                     if is_upper:
-                        self._uinput.write(e.EV_KEY, e.KEY_LEFTSHIFT, 0)
+                        self._uinput.write(ec.EV_KEY, ec.KEY_LEFTSHIFT, 0)
                         self._uinput.syn()
                 else:
                     logger.warning(f"Ignoring unsupported character: {char}")
@@ -116,8 +116,8 @@ class Typer:
             # Add a trailing space automatically? The user might want this.
             # For now, we type exactly what is given.
 
-        except Exception as e:
-            logger.error(f"Error typing text: {e}")
+        except Exception as err:
+            logger.error(f"Error typing text: {err}")
             # Try to re-initialize next time
             if self._uinput:
                 self._uinput.close()

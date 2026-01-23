@@ -93,6 +93,14 @@ class Transcriber:
 
         except Exception as e:
             logger.error(f"Transcription failed: {e}")
+            # Fallback to CPU if CUDA transcription fails
+            if self.device == "cuda":
+                logger.warning("CUDA transcription failed, falling back to CPU...")
+                self.device = "cpu"
+                self.compute_type = "int8"
+                self._model = None  # Force reload
+                self._ensure_model()
+                return self.transcribe(audio_path)  # Retry with CPU
             return ""
 
     def is_available(self) -> bool:

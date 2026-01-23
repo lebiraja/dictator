@@ -46,7 +46,6 @@ class Recorder:
         # Format: 16-bit signed LE, 16kHz mono (optimal for Whisper)
         cmd = [
             "pw-record",
-            "--target", "0",  # Default device
             "--format", "s16",
             "--rate", "16000",
             "--channels", "1",
