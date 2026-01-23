@@ -182,7 +182,7 @@ echo "  • GNOME Shell extension (panel icon, keyboard shortcut)"
 echo "  • Python backend service (audio recording, AI transcription)"
 echo "  • System permissions for keyboard simulation"
 echo ""
-echo "After installation, press ${BOLD}Ctrl+Shift+Space${NC} to dictate!"
+echo -e "After installation, press ${BOLD}Ctrl+Shift+Space${NC} to dictate!"
 echo ""
 
 if ! confirm "Start installation?"; then
@@ -500,7 +500,7 @@ echo ""
 if [ "$NEED_RELOGIN" = true ] || [ "$XDG_SESSION_TYPE" = "wayland" ]; then
     echo -e "${YELLOW}${BOLD}⚠ ACTION REQUIRED:${NC}"
     echo ""
-    echo "  You must ${BOLD}log out and log back in${NC} for changes to take effect."
+    echo -e "  You must ${BOLD}log out and log back in${NC} for changes to take effect."
     echo ""
     if [ "$NEED_RELOGIN" = true ]; then
         echo "  This is needed for:"
@@ -514,9 +514,9 @@ fi
 
 echo -e "${BOLD}How to use:${NC}"
 echo ""
-echo "  1. Press ${CYAN}Ctrl+Shift+Space${NC} to start recording"
+echo -e "  1. Press ${CYAN}Ctrl+Shift+Space${NC} to start recording"
 echo "  2. Speak your text"
-echo "  3. Press ${CYAN}Ctrl+Shift+Space${NC} again to stop"
+echo -e "  3. Press ${CYAN}Ctrl+Shift+Space${NC} again to stop"
 echo "  4. Text will be typed into the focused application"
 echo ""
 echo -e "${BOLD}First run:${NC}"
