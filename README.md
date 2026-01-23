@@ -28,6 +28,10 @@ Press **Ctrl+Shift+Space**, speak, press again — your words appear wherever yo
 - 🖥️ **Universal** — Works on Wayland and X11, in any app
 - 🎯 **Simple** — One shortcut, zero configuration needed
 
+<p align="center">
+  <img src="assets/demo.gif" alt="Dictator Demo" width="800">
+</p>
+
 ## Quick Install
 
 ```bash
