@@ -3,7 +3,7 @@
   "name": "Dictator",
   "description": "System-wide voice dictation using local Whisper AI. Press Ctrl+Shift+Space to record speech, transcribe it locally, and automatically type it into any application. Works on Wayland and X11. Privacy-first: all processing happens on your machine.",
   "version": 1,
-  "shell-version": ["45", "46", "47", "48"],
+  "shell-version": ["45", "46", "47", "48", "49"],
   "settings-schema": "org.gnome.shell.extensions.dictator",
   "gettext-domain": "dictator",
   "url": "https://github.com/lebiraja/dictator"
