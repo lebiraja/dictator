@@ -393,8 +393,10 @@ mkdir -p "$SYSTEMD_USER_DIR"
 
 print_step "Setting up Python environment..."
 
-if [ ! -d "$VENV_DIR" ]; then
+# Force recreate venv if pip is missing or broken
+if [ ! -f "$VENV_DIR/bin/pip" ]; then
     print_substep "Creating virtual environment..."
+    rm -rf "$VENV_DIR"
     "$PYTHON_CMD" -m venv "$VENV_DIR"
 fi
 
