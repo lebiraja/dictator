@@ -399,9 +399,9 @@ if [ ! -d "$VENV_DIR" ]; then
 fi
 
 print_substep "Installing Python packages..."
-"$VENV_DIR/bin/pip" install --upgrade pip --quiet 2>/dev/null
+"$VENV_DIR/bin/pip" install --upgrade pip
 
-if ! "$VENV_DIR/bin/pip" install dbus-next evdev faster-whisper --quiet 2>&1; then
+if ! "$VENV_DIR/bin/pip" install dbus-next evdev faster-whisper; then
     echo ""
     print_error "Failed to install Python packages!"
     echo ""
