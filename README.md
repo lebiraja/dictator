@@ -17,6 +17,9 @@
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
   </a>
   <img src="https://img.shields.io/badge/GNOME-45%2B-blue?logo=gnome" alt="GNOME 45+">
+  <a href="https://launchpad.net/~lebiraja/+archive/ubuntu/dictator">
+    <img src="https://img.shields.io/badge/Ubuntu-PPA-orange?logo=ubuntu" alt="Ubuntu PPA">
+  </a>
 </p>
 
 ---
@@ -32,7 +35,57 @@ Press **Ctrl+Shift+Space**, speak, press again — your words appear wherever yo
   <img src="assets/demo.gif" alt="Dictator Demo" width="800">
 </p>
 
-## Quick Install
+## Installation
+
+### Ubuntu 24.04+ (Recommended - via PPA)
+
+```bash
+# Add the PPA
+sudo add-apt-repository ppa:lebiraja/dictator
+
+# Update package list
+sudo apt update
+
+# Install Dictator
+sudo apt install dictator
+```
+
+**Post-installation steps:**
+
+1. **Add yourself to the uinput group** (required for keyboard input):
+   ```bash
+   sudo usermod -a -G uinput $USER
+   ```
+
+2. **Log out and log back in** (required for group membership to take effect)
+
+3. **Enable the GNOME extension**:
+   ```bash
+   gnome-extensions enable dictator@lebi
+   ```
+
+4. **Start dictating** with **Ctrl+Shift+Space**! 🎤
+
+   Python dependencies will install automatically on first use (~140MB AI model downloads).
+
+**Benefits of PPA installation:**
+- ✅ Automatic updates via `apt upgrade`
+- ✅ Clean uninstallation with `apt remove`
+- ✅ All system dependencies handled automatically
+- ✅ Follows Ubuntu packaging standards
+
+**Optional - GPU Acceleration (NVIDIA users):**
+
+For faster transcription with CUDA support, install the CUDA toolkit:
+```bash
+sudo apt install nvidia-cuda-toolkit
+```
+
+The Whisper AI model will automatically use GPU acceleration if available.
+
+---
+
+### Other Distros (Manual Install)
 
 ```bash
 git clone https://github.com/lebiraja/dictator.git
@@ -40,19 +93,13 @@ cd dictator
 ./install.sh
 ```
 
-That's it! The script handles everything:
+The script handles everything:
 - ✅ Installs GNOME extension
 - ✅ Sets up Python backend with Whisper AI
 - ✅ Configures keyboard permissions
 - ✅ Downloads AI model on first use (~140MB)
 
 After install, **log out and log back in**, then press **Ctrl+Shift+Space** to start!
-
-### One-liner Install
-
-```bash
-git clone https://github.com/lebiraja/dictator.git && cd dictator && ./install.sh --full
-```
 
 ## How It Works
 
@@ -80,8 +127,10 @@ git clone https://github.com/lebiraja/dictator.git && cd dictator && ./install.s
 - **PipeWire** (default on modern distros)
 - **Python 3.10+**
 
+> **Note:** Ubuntu PPA installation handles all dependencies automatically!
+
 <details>
-<summary><strong>📦 Install dependencies if needed</strong></summary>
+<summary><strong>📦 Manual dependency installation (for non-Ubuntu distros)</strong></summary>
 
 **Ubuntu/Debian:**
 ```bash
@@ -169,7 +218,17 @@ journalctl --user | grep -i dictator | tail -30
 
 ## Uninstall
 
+### If installed via PPA:
+
 ```bash
+sudo apt remove dictator
+sudo add-apt-repository --remove ppa:lebiraja/dictator
+```
+
+### If installed manually:
+
+```bash
+cd dictator
 ./install.sh --remove
 ```
 
