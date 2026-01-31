@@ -454,11 +454,6 @@ print_success "Extension installed"
 
 print_step "Installing backend service..."
 
-# Debugging
-echo "DEBUG: PROJECT_DIR is $PROJECT_DIR"
-echo "DEBUG: Listing service directory:"
-ls -la "$PROJECT_DIR/service"
-
 cp "$PROJECT_DIR/service/dictator_service.py" "$SERVICE_DIR/"
 cp "$PROJECT_DIR/service/recorder.py" "$SERVICE_DIR/"
 cp "$PROJECT_DIR/service/transcriber.py" "$SERVICE_DIR/"

@@ -1,0 +1,10 @@
+dictator (1.0.0-1) noble; urgency=medium
+
+  * Initial release
+  * Voice dictation with OpenAI Whisper AI
+  * System-wide keyboard shortcut (Ctrl+Shift+Space)
+  * GPU acceleration support for NVIDIA users
+  * Works on Wayland and X11
+  * 100% private local transcription
+
+ -- LEBI RAJA C <lebiraja2007@gmail.com>  Thu, 30 Jan 2026 12:00:00 +0000

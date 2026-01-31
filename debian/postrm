@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    purge)
+        # Remove udev rule
+        rm -f /etc/udev/rules.d/99-dictator-uinput.rules
+        udevadm control --reload-rules 2>/dev/null || true
+
+        # Remove uinput from /etc/modules
+        if [ -f /etc/modules ]; then
+            sed -i '/^uinput$/d' /etc/modules
+        fi
+
+        # Remove uinput group only if empty
+        if getent group uinput > /dev/null; then
+            if [ -z "$(getent group uinput | cut -d: -f4)" ]; then
+                groupdel uinput 2>/dev/null || true
+            fi
+        fi
+
+        # Clean up user data (venvs, etc.)
+        for user_home in /home/*; do
+            if [ -d "$user_home/.local/share/dictator" ]; then
+                rm -rf "$user_home/.local/share/dictator"
+            fi
+        done
+
+        echo "Dictator has been completely removed."
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

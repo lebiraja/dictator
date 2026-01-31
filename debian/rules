@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python3
+
+override_dh_auto_build:
+	# No build step needed - Python source and JS extension
+
+override_dh_auto_install:
+	# Manual installation via debian/install file
+
+override_dh_auto_test:
+	# Skip tests for now

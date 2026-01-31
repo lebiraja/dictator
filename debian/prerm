@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    remove|deconfigure)
+        # Stop the service for all users
+        for user_home in /home/*; do
+            if [ -d "$user_home" ]; then
+                username=$(basename "$user_home")
+                # Stop systemd service
+                sudo -u "$username" systemctl --user stop dictator.service 2>/dev/null || true
+                sudo -u "$username" systemctl --user disable dictator.service 2>/dev/null || true
+                # Disable GNOME extension
+                sudo -u "$username" gnome-extensions disable dictator@lebi 2>/dev/null || true
+            fi
+        done
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

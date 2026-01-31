@@ -1,0 +1,53 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    configure)
+        # Setup uinput permissions
+        if ! getent group uinput > /dev/null; then
+            groupadd -r uinput
+        fi
+
+        # Create udev rule for uinput access
+        cat > /etc/udev/rules.d/99-dictator-uinput.rules <<'EOF'
+KERNEL=="uinput", GROUP="uinput", MODE="0660"
+EOF
+
+        # Load uinput kernel module
+        if ! lsmod | grep -q uinput; then
+            modprobe uinput || true
+        fi
+
+        # Ensure uinput loads on boot
+        if ! grep -q "^uinput$" /etc/modules 2>/dev/null; then
+            echo "uinput" >> /etc/modules
+        fi
+
+        # Reload udev rules
+        udevadm control --reload-rules || true
+        udevadm trigger || true
+
+        echo ""
+        echo "========================================="
+        echo "Dictator installed successfully!"
+        echo "========================================="
+        echo ""
+        echo "To complete setup:"
+        echo "1. Add yourself to the uinput group:"
+        echo "   sudo usermod -a -G uinput \$USER"
+        echo ""
+        echo "2. Log out and log back in (or reboot)"
+        echo ""
+        echo "3. Enable the GNOME extension:"
+        echo "   gnome-extensions enable dictator@lebi"
+        echo ""
+        echo "4. Python dependencies will install automatically on first use"
+        echo ""
+        echo "5. Use Ctrl+Shift+Space to start/stop recording"
+        echo ""
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0
