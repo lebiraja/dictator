@@ -1,8 +1,26 @@
 #!/bin/bash
 set -e
 
+. /usr/share/debconf/confmodule
+
 case "$1" in
     configure)
+        # Get user's acceleration mode choice
+        db_get dictator/acceleration-mode || true
+        ACCEL_MODE="$RET"
+
+        # Install CUDA toolkit if user chose GPU mode
+        if [ "$ACCEL_MODE" = "gpu" ]; then
+            echo "Installing CUDA toolkit for GPU acceleration..."
+            apt-get install -y nvidia-cuda-toolkit 2>/dev/null || {
+                echo "Warning: Failed to install nvidia-cuda-toolkit"
+                echo "You can install it manually later with: sudo apt install nvidia-cuda-toolkit"
+            }
+        else
+            echo "CPU mode selected - CUDA toolkit will not be installed"
+            echo "To enable GPU later, install CUDA with: sudo apt install nvidia-cuda-toolkit"
+        fi
+
         # Setup uinput permissions
         if ! getent group uinput > /dev/null; then
             groupadd -r uinput
@@ -47,6 +65,9 @@ EOF
         echo ""
     ;;
 esac
+
+# Stop debconf
+db_stop || true
 
 #DEBHELPER#
 

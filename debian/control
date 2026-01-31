@@ -13,6 +13,7 @@ Package: dictator
 Architecture: all
 Depends: ${misc:Depends},
          ${python3:Depends},
+         debconf (>= 0.5) | debconf-2.0,
          gnome-shell (>= 45),
          python3 (>= 3.10),
          python3-pip,
@@ -21,7 +22,7 @@ Depends: ${misc:Depends},
          libglib2.0-dev,
          libevdev-dev,
          gir1.2-glib-2.0
-Recommends: nvidia-cuda-toolkit
+Suggests: nvidia-cuda-toolkit
 Description: Voice dictation for GNOME with local AI transcription
  Dictator enables system-wide voice-to-text functionality for GNOME desktops.
  Uses OpenAI's Whisper AI model locally for 100% private transcription.

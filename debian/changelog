@@ -1,3 +1,13 @@
+dictator (2.0.0-1) noble; urgency=medium
+
+  * Add interactive installation with CPU/GPU selection
+  * Auto-detect NVIDIA GPU and recommend appropriate mode
+  * Allow users to choose between CPU and GPU (CUDA) acceleration
+  * Avoid downloading 6GB CUDA toolkit unless user wants GPU mode
+  * Default to GPU mode when NVIDIA GPU is detected
+
+ -- LEBI RAJA C <lebiraja2007@gmail.com>  Fri, 31 Jan 2026 06:00:00 +0000
+
 dictator (1.0.0-1) noble; urgency=medium
 
   * Initial release
