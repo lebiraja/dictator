@@ -420,14 +420,67 @@ if ! "$VENV_DIR/bin/pip" install dbus-next evdev faster-whisper; then
     exit 1
 fi
 
-# Check for NVIDIA GPU
+# ============================================================================
+# ACCELERATION MODE SELECTION
+# ============================================================================
+
+print_header "Acceleration Mode"
+
+ACCEL_MODE="cpu"
+HAS_NVIDIA=false
+GPU_NAME=""
+
+# Detect NVIDIA GPU
 if check_command nvidia-smi; then
-    print_substep "NVIDIA GPU detected, installing CUDA support..."
-    "$VENV_DIR/bin/pip" install nvidia-cublas-cu12 nvidia-cudnn-cu12 --quiet 2>/dev/null || {
-        print_warning "CUDA libraries failed to install. Will use CPU mode."
-    }
+    GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || echo "")
+    if [ -n "$GPU_NAME" ]; then
+        HAS_NVIDIA=true
+        print_success "NVIDIA GPU detected: $GPU_NAME"
+    fi
+fi
+
+if [ "$HAS_NVIDIA" = true ]; then
+    echo ""
+    echo "Choose acceleration mode for transcription:"
+    echo ""
+    echo -e "  ${BOLD}1) GPU${NC} - Use NVIDIA CUDA (faster, recommended)"
+    echo -e "  ${BOLD}2) CPU${NC} - Use CPU only (slower, but always works)"
+    echo ""
+
+    if [ "$AUTO_YES" = true ]; then
+        # Non-interactive: default to GPU if available
+        ACCEL_MODE="gpu"
+        echo "Auto-selecting GPU mode (--full flag)"
+    else
+        read -p "Select [1/2] (default: 1): " -n 1 -r choice
+        echo ""
+        case $choice in
+            2)
+                ACCEL_MODE="cpu"
+                print_substep "CPU mode selected"
+                ;;
+            *)
+                ACCEL_MODE="gpu"
+                print_substep "GPU mode selected"
+                ;;
+        esac
+    fi
 else
-    print_substep "No NVIDIA GPU detected, will use CPU mode"
+    print_substep "No NVIDIA GPU detected, using CPU mode"
+    ACCEL_MODE="cpu"
+fi
+
+# Install CUDA libraries if GPU mode selected
+if [ "$ACCEL_MODE" = "gpu" ]; then
+    print_step "Installing CUDA support..."
+    if "$VENV_DIR/bin/pip" install nvidia-cublas-cu12 nvidia-cudnn-cu12 --quiet 2>/dev/null; then
+        print_success "CUDA libraries installed"
+    else
+        print_warning "CUDA libraries failed to install. Will fall back to CPU mode."
+        ACCEL_MODE="cpu"
+    fi
+else
+    print_substep "Skipping CUDA libraries (CPU mode)"
 fi
 
 print_success "Python environment ready"
@@ -439,6 +492,7 @@ print_success "Python environment ready"
 print_step "Installing GNOME Shell extension..."
 
 cp "$PROJECT_DIR/extension/extension.js" "$EXTENSION_DIR/"
+cp "$PROJECT_DIR/extension/prefs.js" "$EXTENSION_DIR/"
 cp "$PROJECT_DIR/extension/metadata.json" "$EXTENSION_DIR/"
 cp "$PROJECT_DIR/extension/stylesheet.css" "$EXTENSION_DIR/"
 cp "$PROJECT_DIR/extension/schemas/"*.xml "$EXTENSION_DIR/schemas/"
@@ -520,6 +574,11 @@ echo -e "  1. Press ${CYAN}Ctrl+Shift+Space${NC} to start recording"
 echo "  2. Speak your text"
 echo -e "  3. Press ${CYAN}Ctrl+Shift+Space${NC} again to stop"
 echo "  4. Text will be typed into the focused application"
+echo ""
+echo -e "${BOLD}Customize:${NC}"
+echo ""
+echo "  • Right-click the panel icon → Settings to change the keyboard shortcut"
+echo "  • Or run: gnome-extensions prefs dictator@lebi"
 echo ""
 echo -e "${BOLD}First run:${NC}"
 echo ""

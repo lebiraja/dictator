@@ -70,6 +70,7 @@ class DictatorIndicator extends PanelMenu.Button {
         this._proxy = null;
         this._signalIds = [];
         this._shortcutRegistered = false;
+        this._settingsChangedId = null;
 
         // Create icon
         this._icon = new St.Icon({
@@ -86,6 +87,20 @@ class DictatorIndicator extends PanelMenu.Button {
 
         // Register keyboard shortcut
         this._registerShortcut();
+
+        // Listen for shortcut setting changes
+        const settings = this._extension.getSettings();
+        this._settingsChangedId = settings.connect('changed::shortcut', () => {
+            this._onShortcutChanged();
+        });
+    }
+
+    _onShortcutChanged() {
+        // Re-register shortcut with new binding
+        this._unregisterShortcut();
+        this._registerShortcut();
+
+        log('Dictator: Keyboard shortcut updated');
     }
 
     _buildMenu() {
@@ -111,6 +126,22 @@ class DictatorIndicator extends PanelMenu.Button {
         // Settings/info section
         this._modelStatusItem = new PopupMenu.PopupMenuItem(_('Ready'), { reactive: false });
         this.menu.addMenuItem(this._modelStatusItem);
+
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        // Settings menu item
+        this._settingsItem = new PopupMenu.PopupMenuItem(_('Settings'));
+        this._settingsItem.connect('activate', () => this._openSettings());
+        this.menu.addMenuItem(this._settingsItem);
+    }
+
+    _openSettings() {
+        // Open extension preferences
+        try {
+            GLib.spawn_command_line_async(`gnome-extensions prefs ${this._extension.metadata.uuid}`);
+        } catch (e) {
+            log(`Dictator: Failed to open settings: ${e.message}`);
+        }
     }
 
     async _connectToService() {
@@ -328,6 +359,13 @@ class DictatorIndicator extends PanelMenu.Button {
     }
 
     destroy() {
+        // Disconnect GSettings listener
+        if (this._settingsChangedId) {
+            const settings = this._extension.getSettings();
+            settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
+
         // Disconnect signals
         if (this._proxy) {
             for (const id of this._signalIds) {
