@@ -15,7 +15,7 @@
     </key>
 
     <key name="model" type="s">
-      <default>'base.en'</default>
+      <default>'small.en'</default>
       <summary>Whisper model</summary>
       <description>Which Whisper model to use: 'tiny.en', 'base.en', or 'small.en'</description>
     </key>

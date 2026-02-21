@@ -4,8 +4,7 @@ Documentation=https://github.com/lebi/dictator
 After=graphical-session.target
 
 [Service]
-Type=dbus
-BusName=org.lebi.Dictator
+Type=simple
 ExecStart=%h/.local/share/dictator/venv/bin/python3 %h/.local/share/dictator/service/dictator_service.py
 Restart=on-failure
 RestartSec=5
