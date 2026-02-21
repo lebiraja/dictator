@@ -3,7 +3,7 @@
   <schema id="org.gnome.shell.extensions.dictator" path="/org/gnome/shell/extensions/dictator/">
 
     <key name="shortcut" type="as">
-      <default>['&lt;Control&gt;&lt;Shift&gt;space']</default>
+      <default>['&lt;Shift&gt;&lt;Control&gt;space']</default>
       <summary>Toggle dictation shortcut</summary>
       <description>Keyboard shortcut to start/stop dictation</description>
     </key>
