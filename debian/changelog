@@ -1,3 +1,20 @@
+dictator (2.1.0-1) noble; urgency=medium
+
+  * Service: in-memory audio capture (no temp files), live audio level signal
+  * Service: warm model preload, state machine hardening, clean shutdown
+  * Output: clipboard-paste mode by default with clipboard restore;
+    complete US-layout map for type mode (fixes dropped punctuation)
+  * Extension: redesigned overlay with live level meter and timer,
+    GNOME 45 notification compatibility, service crash recovery
+  * Preferences: model, output mode, max duration, overlay/notification toggles
+  * New: dictator CLI for non-GNOME desktops (bind "dictator toggle" anywhere)
+  * New: dictator-setup for per-user environment setup after apt install
+  * Packaging: remove apt-get call from postinst (Debian Policy violation),
+    pair systemd unit with D-Bus activation (Type=dbus), drop debconf question
+  * Pinned Python dependencies (requirements.txt)
+
+ -- LEBI RAJA C <lebiraja2007@gmail.com>  Wed, 10 Jun 2026 12:00:00 +0000
+
 dictator (2.0.0-1) noble; urgency=medium
 
   * Add interactive installation with CPU/GPU selection

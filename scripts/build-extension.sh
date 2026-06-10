@@ -28,6 +28,7 @@ mkdir -p "$DIST_DIR"
 # Copy extension files
 echo "Copying extension files..."
 cp "$EXTENSION_DIR/extension.js" "$BUILD_DIR/"
+cp "$EXTENSION_DIR/prefs.js" "$BUILD_DIR/"
 cp "$EXTENSION_DIR/metadata.json" "$BUILD_DIR/"
 cp "$EXTENSION_DIR/stylesheet.css" "$BUILD_DIR/"
 

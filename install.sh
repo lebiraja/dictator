@@ -159,6 +159,7 @@ if [ "$UNINSTALL" = true ]; then
     rm -rf "$DICTATOR_DIR"
     rm -f "$DBUS_SERVICE_DIR/org.lebi.Dictator.service"
     rm -f "$SYSTEMD_USER_DIR/dictator.service"
+    rm -f "$HOME/.local/bin/dictator"
 
     # Reload systemd
     systemctl --user daemon-reload 2>/dev/null || true
@@ -182,7 +183,7 @@ echo "  • GNOME Shell extension (panel icon, keyboard shortcut)"
 echo "  • Python backend service (audio recording, AI transcription)"
 echo "  • System permissions for keyboard simulation"
 echo ""
-echo -e "After installation, press ${BOLD}Ctrl+Shift+Space${NC} to dictate!"
+echo -e "After installation, press ${BOLD}Shift+Ctrl+Space${NC} to dictate!"
 echo ""
 
 if ! confirm "Start installation?"; then
@@ -278,6 +279,14 @@ if check_command glib-compile-schemas; then
 else
     print_error "glib-compile-schemas not found"
     ERRORS=$((ERRORS + 1))
+fi
+
+# Check clipboard tool (needed for the default paste output mode)
+if check_command wl-copy || check_command xclip; then
+    print_success "clipboard tool (wl-copy/xclip)"
+else
+    print_warning "No clipboard tool found — install 'wl-clipboard' (Wayland) or 'xclip' (X11)."
+    print_warning "Without one, Dictator falls back to slower per-character typing."
 fi
 
 # Show install commands if missing deps
@@ -403,7 +412,7 @@ fi
 print_substep "Installing Python packages..."
 "$VENV_DIR/bin/pip" install --upgrade pip
 
-if ! "$VENV_DIR/bin/pip" install dbus-next evdev faster-whisper; then
+if ! "$VENV_DIR/bin/pip" install -r "$PROJECT_DIR/service/requirements.txt"; then
     echo ""
     print_error "Failed to install Python packages!"
     echo ""
@@ -516,6 +525,12 @@ touch "$SERVICE_DIR/__init__.py"
 
 chmod +x "$SERVICE_DIR/dictator_service.py"
 
+# CLI (works on any desktop: bind "dictator toggle" to a hotkey)
+print_substep "Installing dictator CLI..."
+mkdir -p "$HOME/.local/bin"
+cp "$PROJECT_DIR/cli/dictator" "$HOME/.local/bin/dictator"
+chmod +x "$HOME/.local/bin/dictator"
+
 # D-Bus service file
 print_substep "Installing D-Bus service..."
 sed "s|%h|$HOME|g" "$PROJECT_DIR/service/org.lebi.Dictator.service" > "$DBUS_SERVICE_DIR/org.lebi.Dictator.service"
@@ -570,9 +585,9 @@ fi
 
 echo -e "${BOLD}How to use:${NC}"
 echo ""
-echo -e "  1. Press ${CYAN}Ctrl+Shift+Space${NC} to start recording"
+echo -e "  1. Press ${CYAN}Shift+Ctrl+Space${NC} to start recording"
 echo "  2. Speak your text"
-echo -e "  3. Press ${CYAN}Ctrl+Shift+Space${NC} again to stop"
+echo -e "  3. Press ${CYAN}Shift+Ctrl+Space${NC} again to stop"
 echo "  4. Text will be typed into the focused application"
 echo ""
 echo -e "${BOLD}Customize:${NC}"
@@ -582,7 +597,7 @@ echo "  • Or run: gnome-extensions prefs dictator@lebi"
 echo ""
 echo -e "${BOLD}First run:${NC}"
 echo ""
-echo "  The AI model (~140MB) will download automatically on first use."
+echo "  The AI model (~460MB, small.en) downloads automatically when the service first starts."
 echo ""
 echo -e "${BOLD}Troubleshooting:${NC}"
 echo ""

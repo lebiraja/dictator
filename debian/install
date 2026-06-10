@@ -1,7 +1,8 @@
 extension/* usr/share/gnome-shell/extensions/dictator@lebi/
 service/*.py usr/share/dictator/service/
+service/requirements.txt usr/share/dictator/service/
 service/org.lebi.Dictator.service usr/share/dictator/service/
 systemd/dictator.service usr/share/dictator/systemd/
-install.sh usr/share/dictator/
-scripts/* usr/share/dictator/scripts/
+cli/dictator usr/bin/
+cli/dictator-setup usr/bin/
 README.md usr/share/doc/dictator/

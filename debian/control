@@ -4,8 +4,7 @@ Priority: optional
 Maintainer: LEBI RAJA C <lebiraja2007@gmail.com>
 Build-Depends: debhelper-compat (= 13),
                dh-python,
-               python3-all,
-               libglib2.0-dev
+               python3-all
 Standards-Version: 4.6.0
 Homepage: https://github.com/lebiraja/dictator
 
@@ -13,22 +12,22 @@ Package: dictator
 Architecture: all
 Depends: ${misc:Depends},
          ${python3:Depends},
-         debconf (>= 0.5) | debconf-2.0,
          gnome-shell (>= 45),
          python3 (>= 3.10),
          python3-pip,
          python3-venv,
+         python3-dev,
+         gcc,
          pipewire,
-         libglib2.0-dev,
-         libevdev-dev,
          gir1.2-glib-2.0
+Recommends: wl-clipboard | xclip
 Suggests: nvidia-cuda-toolkit
 Description: Voice dictation for GNOME with local AI transcription
  Dictator enables system-wide voice-to-text functionality for GNOME desktops.
  Uses OpenAI's Whisper AI model locally for 100% private transcription.
  .
  Features:
-  - Toggle recording with Ctrl+Shift+Space
+  - Toggle recording with Shift+Ctrl+Space
   - Works in any application (Wayland and X11)
   - GPU acceleration support (NVIDIA CUDA)
   - No cloud services or data transmission

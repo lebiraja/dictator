@@ -1,26 +1,8 @@
 #!/bin/bash
 set -e
 
-. /usr/share/debconf/confmodule
-
 case "$1" in
     configure)
-        # Get user's acceleration mode choice
-        db_get dictator/acceleration-mode || true
-        ACCEL_MODE="$RET"
-
-        # Install CUDA toolkit if user chose GPU mode
-        if [ "$ACCEL_MODE" = "gpu" ]; then
-            echo "Installing CUDA toolkit for GPU acceleration..."
-            apt-get install -y nvidia-cuda-toolkit 2>/dev/null || {
-                echo "Warning: Failed to install nvidia-cuda-toolkit"
-                echo "You can install it manually later with: sudo apt install nvidia-cuda-toolkit"
-            }
-        else
-            echo "CPU mode selected - CUDA toolkit will not be installed"
-            echo "To enable GPU later, install CUDA with: sudo apt install nvidia-cuda-toolkit"
-        fi
-
         # Setup uinput permissions
         if ! getent group uinput > /dev/null; then
             groupadd -r uinput
@@ -28,17 +10,15 @@ case "$1" in
 
         # Create udev rule for uinput access
         cat > /etc/udev/rules.d/99-dictator-uinput.rules <<'EOF'
-KERNEL=="uinput", GROUP="uinput", MODE="0660"
+KERNEL=="uinput", GROUP="uinput", MODE="0660", OPTIONS+="static_node=uinput"
 EOF
 
-        # Load uinput kernel module
+        # Load uinput kernel module now and on boot
         if ! lsmod | grep -q uinput; then
             modprobe uinput || true
         fi
-
-        # Ensure uinput loads on boot
-        if ! grep -q "^uinput$" /etc/modules 2>/dev/null; then
-            echo "uinput" >> /etc/modules
+        if [ ! -f /etc/modules-load.d/uinput.conf ]; then
+            echo "uinput" > /etc/modules-load.d/uinput.conf
         fi
 
         # Reload udev rules
@@ -47,27 +27,26 @@ EOF
 
         echo ""
         echo "========================================="
-        echo "Dictator installed successfully!"
+        echo "Dictator installed!"
         echo "========================================="
         echo ""
-        echo "To complete setup:"
+        echo "To complete setup, as your normal user:"
+        echo ""
         echo "1. Add yourself to the uinput group:"
-        echo "   sudo usermod -a -G uinput \$USER"
+        echo "   sudo usermod -aG uinput \$USER"
         echo ""
-        echo "2. Log out and log back in (or reboot)"
+        echo "2. Run the per-user setup (creates the Python environment):"
+        echo "   dictator-setup"
         echo ""
-        echo "3. Enable the GNOME extension:"
-        echo "   gnome-extensions enable dictator@lebi"
+        echo "3. Log out and log back in"
         echo ""
-        echo "4. Python dependencies will install automatically on first use"
+        echo "4. Press Shift+Ctrl+Space to dictate"
         echo ""
-        echo "5. Use Ctrl+Shift+Space to start/stop recording"
+        echo "Optional GPU acceleration (NVIDIA):"
+        echo "   ~/.local/share/dictator/venv/bin/pip install nvidia-cublas-cu12 nvidia-cudnn-cu12"
         echo ""
     ;;
 esac
-
-# Stop debconf
-db_stop || true
 
 #DEBHELPER#
 

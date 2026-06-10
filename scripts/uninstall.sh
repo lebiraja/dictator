@@ -36,6 +36,9 @@ if [ -f "$DBUS_SERVICE_FILE" ]; then
     rm -f "$DBUS_SERVICE_FILE"
 fi
 
+# Remove CLI
+rm -f "$HOME/.local/bin/dictator"
+
 # Remove systemd service
 if [ -f "$SYSTEMD_SERVICE_FILE" ]; then
     echo "Removing systemd service..."

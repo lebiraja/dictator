@@ -1,0 +1,44 @@
+#!/bin/sh
+# dictator — control the Dictator dictation service from any desktop.
+#
+# Bind "dictator toggle" to a hotkey in KDE/Sway/Hyprland/anything to get
+# the same push-to-dictate workflow as the GNOME extension.
+
+set -eu
+
+BUS=org.lebi.Dictator
+PATH_=/org/lebi/Dictator
+IFACE=org.lebi.Dictator
+
+call() {
+    gdbus call --session --dest "$BUS" --object-path "$PATH_" \
+        --method "$IFACE.$1"
+}
+
+case "${1:-}" in
+    toggle)
+        call Toggle
+        ;;
+    start)
+        call StartRecording
+        ;;
+    stop)
+        call StopRecording
+        ;;
+    cancel)
+        call Cancel
+        ;;
+    status)
+        call GetState
+        ;;
+    *)
+        echo "Usage: dictator {toggle|start|stop|cancel|status}" >&2
+        echo "" >&2
+        echo "  toggle   Start recording, or stop + transcribe + type" >&2
+        echo "  start    Start recording" >&2
+        echo "  stop     Stop recording, transcribe, and type the result" >&2
+        echo "  cancel   Abort the current operation" >&2
+        echo "  status   Print the service state" >&2
+        exit 2
+        ;;
+esac

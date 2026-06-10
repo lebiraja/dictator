@@ -1,3 +1,4 @@
 [D-BUS Service]
 Name=org.lebi.Dictator
 Exec=%h/.local/share/dictator/venv/bin/python3 %h/.local/share/dictator/service/dictator_service.py
+SystemdService=dictator.service

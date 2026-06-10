@@ -1,0 +1,53 @@
+#!/bin/sh
+# dictator-setup — per-user setup for the apt-installed Dictator package.
+#
+# Creates the Python virtualenv, installs pinned dependencies, and wires up
+# the user-level D-Bus activation and systemd unit. Run as your normal user.
+
+set -eu
+
+SHARE=/usr/share/dictator
+DICTATOR_DIR="$HOME/.local/share/dictator"
+SERVICE_DIR="$DICTATOR_DIR/service"
+VENV_DIR="$DICTATOR_DIR/venv"
+DBUS_SERVICE_DIR="$HOME/.local/share/dbus-1/services"
+SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
+
+if [ "$(id -u)" = "0" ]; then
+    echo "Run dictator-setup as your normal user, not root." >&2
+    exit 1
+fi
+
+if [ ! -d "$SHARE/service" ]; then
+    echo "Dictator package files not found at $SHARE. Is the package installed?" >&2
+    exit 1
+fi
+
+echo "Setting up Dictator for $USER..."
+
+mkdir -p "$SERVICE_DIR" "$DBUS_SERVICE_DIR" "$SYSTEMD_USER_DIR"
+
+echo "-> Creating Python environment..."
+if [ ! -f "$VENV_DIR/bin/pip" ]; then
+    python3 -m venv "$VENV_DIR"
+fi
+"$VENV_DIR/bin/pip" install --quiet --upgrade pip
+"$VENV_DIR/bin/pip" install --quiet -r "$SHARE/service/requirements.txt"
+
+echo "-> Installing service files..."
+cp "$SHARE/service/"*.py "$SERVICE_DIR/"
+sed "s|%h|$HOME|g" "$SHARE/service/org.lebi.Dictator.service" \
+    > "$DBUS_SERVICE_DIR/org.lebi.Dictator.service"
+sed "s|%h|$HOME|g" "$SHARE/systemd/dictator.service" \
+    > "$SYSTEMD_USER_DIR/dictator.service"
+systemctl --user daemon-reload
+
+echo "-> Enabling GNOME extension..."
+gnome-extensions enable dictator@lebi 2>/dev/null || \
+    echo "   (could not enable automatically — run: gnome-extensions enable dictator@lebi)"
+
+echo ""
+echo "Done. Make sure you are in the 'uinput' group, then log out and back in:"
+echo "  sudo usermod -aG uinput \$USER"
+echo ""
+echo "Press Shift+Ctrl+Space to dictate. The Whisper model downloads on first start."

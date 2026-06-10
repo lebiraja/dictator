@@ -1,10 +1,11 @@
 [Unit]
 Description=Dictator - GNOME Dictation Service
-Documentation=https://github.com/lebi/dictator
+Documentation=https://github.com/lebiraja/dictator
 After=graphical-session.target
 
 [Service]
-Type=simple
+Type=dbus
+BusName=org.lebi.Dictator
 ExecStart=%h/.local/share/dictator/venv/bin/python3 %h/.local/share/dictator/service/dictator_service.py
 Restart=on-failure
 RestartSec=5
