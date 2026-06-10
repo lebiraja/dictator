@@ -24,7 +24,7 @@
 
 ---
 
-Press **Ctrl+Shift+Space**, speak, press again — your words appear wherever you're typing.
+Press **Shift+Ctrl+Space**, speak, press again — your words appear wherever you're typing.
 
 - 🔒 **100% Local** — No cloud, no data leaves your machine
 - ⚡ **Fast** — GPU-accelerated with CUDA, or runs on CPU
@@ -57,16 +57,16 @@ sudo apt install dictator
    sudo usermod -a -G uinput $USER
    ```
 
-2. **Log out and log back in** (required for group membership to take effect)
-
-3. **Enable the GNOME extension**:
+2. **Run the per-user setup** (creates the Python environment and enables the extension):
    ```bash
-   gnome-extensions enable dictator@lebi
+   dictator-setup
    ```
 
-4. **Start dictating** with **Ctrl+Shift+Space**! 🎤
+3. **Log out and log back in** (required for group membership to take effect)
 
-   Python dependencies will install automatically on first use (~140MB AI model downloads).
+4. **Start dictating** with **Shift+Ctrl+Space**! 🎤
+
+   The AI model (~460MB) downloads automatically when the service first starts.
 
 **Benefits of PPA installation:**
 - ✅ Automatic updates via `apt upgrade`
@@ -76,12 +76,14 @@ sudo apt install dictator
 
 **Optional - GPU Acceleration (NVIDIA users):**
 
-For faster transcription with CUDA support, install the CUDA toolkit:
+For faster transcription, install the CUDA runtime wheels into Dictator's
+environment (a few hundred MB — no 6GB toolkit needed):
 ```bash
-sudo apt install nvidia-cuda-toolkit
+~/.local/share/dictator/venv/bin/pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
 ```
 
-The Whisper AI model will automatically use GPU acceleration if available.
+The service automatically uses the GPU when CUDA is available, and falls
+back to CPU otherwise.
 
 ---
 
@@ -120,7 +122,7 @@ groups | grep uinput
 
 ### First Use
 
-**Press Ctrl+Shift+Space** and speak. Press again when done.
+**Press Shift+Ctrl+Space** and speak. Press again when done.
 
 On first use, Dictator will:
 - Download the Whisper AI model (~140MB for base model)
@@ -130,7 +132,7 @@ On first use, Dictator will:
 **What you'll see:**
 1. Panel icon turns **red** = Recording
 2. Speak your text clearly
-3. Press **Ctrl+Shift+Space** again = Processing
+3. Press **Shift+Ctrl+Space** again = Processing
 4. Text appears in your focused application!
 
 ### Quick Test
@@ -140,9 +142,9 @@ On first use, Dictator will:
 gedit &
 
 # Click in the editor window
-# Press Ctrl+Shift+Space
+# Press Shift+Ctrl+Space
 # Say: "Hello world, this is a test"
-# Press Ctrl+Shift+Space again
+# Press Shift+Ctrl+Space again
 # Text should appear!
 ```
 
@@ -160,15 +162,15 @@ The script handles everything:
 - ✅ Installs GNOME extension
 - ✅ Sets up Python backend with Whisper AI
 - ✅ Configures keyboard permissions
-- ✅ Downloads AI model on first use (~140MB)
+- ✅ Downloads AI model when the service first starts (~460MB, small.en)
 
-After install, **log out and log back in**, then press **Ctrl+Shift+Space** to start!
+After install, **log out and log back in**, then press **Shift+Ctrl+Space** to start!
 
 ## How It Works
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  You press Ctrl+Shift+Space and speak                   │
+│  You press Shift+Ctrl+Space and speak                   │
 └─────────────────────────┬───────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -180,9 +182,27 @@ After install, **log out and log back in**, then press **Ctrl+Shift+Space** to s
 └─────────────────────────┬───────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│  ⌨️ Text is typed into your focused application         │
+│  ⌨️ Text is pasted into your focused application        │
+│     (clipboard is saved and restored automatically)     │
 └─────────────────────────────────────────────────────────┘
 ```
+
+Audio is processed entirely in memory — it never touches disk. While you
+speak, a floating overlay shows a live audio level meter and elapsed time.
+
+## Other Desktops (KDE, Sway, Hyprland, …)
+
+The dictation service is plain D-Bus — only the panel UI is GNOME-specific.
+On any desktop, bind the bundled CLI to a hotkey:
+
+```bash
+dictator toggle    # start recording / stop + transcribe + type
+dictator status    # idle | recording | transcribing | ...
+dictator cancel    # abort
+```
+
+(Installed to `~/.local/bin/dictator` by `install.sh`, `/usr/bin/dictator`
+via the deb package.)
 
 ## Requirements
 
@@ -214,7 +234,11 @@ sudo pacman -S python python-pip pipewire glib2 libevdev
 
 ## Configuration
 
-After installation, you can customize Dictator's behavior using `gsettings`:
+The easiest way: click the panel microphone icon → **Settings**. The
+preferences window covers the shortcut, Whisper model, output mode, max
+recording duration, and overlay/notification toggles.
+
+Everything is also scriptable via `gsettings`:
 
 ### Keyboard Shortcut
 
@@ -239,11 +263,11 @@ Choose between speed and accuracy:
 gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schemas \
   set org.gnome.shell.extensions.dictator model 'tiny.en'
 
-# Base model - Balanced (default, ~74MB)
+# Base model - Balanced (~74MB)
 gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schemas \
   set org.gnome.shell.extensions.dictator model 'base.en'
 
-# Small model - Most accurate, slower (~244MB)
+# Small model - Most accurate (default, ~244MB)
 gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schemas \
   set org.gnome.shell.extensions.dictator model 'small.en'
 ```
@@ -253,11 +277,13 @@ gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schema
 Control how transcribed text is inserted:
 
 ```bash
-# Clipboard mode - Copies text to clipboard (default, works everywhere)
+# Paste mode (default) — instant Ctrl+V paste, clipboard saved & restored,
+# works with any keyboard layout (Wayland and X11)
 gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schemas \
   set org.gnome.shell.extensions.dictator output-mode 'clipboard'
 
-# Type mode - Simulates keyboard typing (X11 only, auto-pastes)
+# Type mode — simulates each keystroke (US layout); use for apps that
+# block pasting, e.g. terminals that expect Ctrl+Shift+V
 gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schemas \
   set org.gnome.shell.extensions.dictator output-mode 'type'
 ```
@@ -280,10 +306,11 @@ gsettings --schemadir ~/.local/share/gnome-shell/extensions/dictator@lebi/schema
 
 | Setting | Default | Options | Description |
 |---------|---------|---------|-------------|
-| `shortcut` | `<Control><Shift>space` | Any key combo | Keyboard shortcut to toggle recording |
-| `model` | `base.en` | `tiny.en`, `base.en`, `small.en` | Whisper AI model (speed vs accuracy) |
-| `output-mode` | `clipboard` | `clipboard`, `type` | How to output text (clipboard or auto-type) |
-| `show-overlay` | `true` | `true`, `false` | Show visual recording indicator |
+| `shortcut` | `<Shift><Control>space` | Any key combo | Keyboard shortcut to toggle recording |
+| `model` | `small.en` | `tiny.en`, `base.en`, `small.en` | Whisper AI model (speed vs accuracy) |
+| `output-mode` | `clipboard` | `clipboard`, `type` | Paste via Ctrl+V (fast) or simulate keystrokes |
+| `max-duration` | `120` | 10–600 | Seconds before recording auto-stops |
+| `show-overlay` | `true` | `true`, `false` | Floating pill with live level meter and timer |
 | `show-notifications` | `true` | `true`, `false` | Show notification popups |
 
 ### View Current Settings
@@ -473,7 +500,7 @@ gnome-extensions enable dictator@lebi
 
 ```bash
 # Start/stop dictation
-Ctrl+Shift+Space (press to start, press again to stop)
+Shift+Ctrl+Space (press to start, press again to stop)
 
 # Enable extension
 gnome-extensions enable dictator@lebi
