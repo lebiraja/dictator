@@ -11,13 +11,20 @@
     <key name="output-mode" type="s">
       <default>'clipboard'</default>
       <summary>Output mode</summary>
-      <description>How to output transcribed text: 'clipboard' or 'type' (X11 only)</description>
+      <description>How to output transcribed text: 'clipboard' (paste via Ctrl+V, fast) or 'type' (per-character key events, compatibility)</description>
     </key>
 
     <key name="model" type="s">
       <default>'small.en'</default>
       <summary>Whisper model</summary>
       <description>Which Whisper model to use: 'tiny.en', 'base.en', or 'small.en'</description>
+    </key>
+
+    <key name="max-duration" type="i">
+      <default>120</default>
+      <range min="10" max="600"/>
+      <summary>Maximum recording duration</summary>
+      <description>Recording stops and transcribes automatically after this many seconds</description>
     </key>
 
     <key name="show-overlay" type="b">

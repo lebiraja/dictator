@@ -2,21 +2,22 @@
 
 /* Panel icon states */
 .dictator-icon-idle {
-    color: #888888;
+    color: #9a9a9a;
 }
 
 .dictator-icon-recording {
-    color: #ff4444;
+    color: #ff4d4d;
 }
 
 .dictator-icon-transcribing {
-    color: #4488ff;
+    color: #4d8dff;
 }
 
 .dictator-icon-typing {
     color: #00ccff;
 }
 
+.dictator-icon-loading,
 .dictator-icon-downloading {
     color: #ffaa00;
 }
@@ -25,20 +26,43 @@
     color: #ff8800;
 }
 
-/* Recording overlay */
+/* Floating status pill */
 .dictator-overlay {
-    background-color: rgba(0, 0, 0, 0.85);
-    border-radius: 16px;
-    padding: 24px 48px;
-    spacing: 12px;
+    background-color: rgba(16, 16, 20, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 10px 20px;
+    spacing: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.dictator-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background-color: #ff4d4d;
 }
 
 .dictator-overlay-icon {
-    color: #ff4444;
+    color: #e8e8e8;
+}
+
+.dictator-bars {
+    spacing: 3px;
+}
+
+.dictator-bar {
+    border-radius: 2px;
+    background-color: #ff6b6b;
 }
 
 .dictator-overlay-label {
-    font-size: 16px;
-    font-weight: bold;
-    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    color: #f2f2f2;
+}
+
+.dictator-overlay-timer {
+    font-size: 13px;
+    color: #b0b0b0;
 }
