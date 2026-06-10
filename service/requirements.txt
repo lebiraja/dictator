@@ -1,0 +1,4 @@
+dbus-next==0.2.3
+evdev==1.9.3
+faster-whisper==1.2.1
+numpy==2.2.6

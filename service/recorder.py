@@ -1,128 +1,191 @@
-"""Audio recorder module using PipeWire's pw-record."""
+"""In-memory audio capture via PipeWire's pw-record.
+
+Audio is streamed from pw-record's stdout straight into RAM — nothing is
+written to disk. The recorder reports a smoothed RMS level per chunk so the
+UI can render a live meter, and enforces a hard duration cap.
+"""
 
 import asyncio
-import os
-import tempfile
-from pathlib import Path
-from typing import Optional
+import logging
+from collections.abc import Awaitable, Callable
+
+import numpy as np
+
+logger = logging.getLogger("dictator.recorder")
+
+SAMPLE_RATE = 16000
+SAMPLE_WIDTH = 2  # s16
+BYTES_PER_SECOND = SAMPLE_RATE * SAMPLE_WIDTH
+CHUNK_BYTES = BYTES_PER_SECOND // 10  # 100 ms => ~10 level updates/sec
+MIN_AUDIO_SECONDS = 0.25
+STARTUP_GRACE_SECONDS = 0.3
+
+LevelCallback = Callable[[float], None]
+LimitCallback = Callable[[], Awaitable[None]]
+
+
+class RecorderError(RuntimeError):
+    """Raised when recording cannot start, stop, or produced no audio."""
 
 
 class Recorder:
-    """Handles audio recording via pw-record subprocess."""
+    """Records 16 kHz mono s16 PCM from the default source into memory."""
 
-    def __init__(self):
-        self._process: Optional[asyncio.subprocess.Process] = None
-        self._audio_file: Optional[Path] = None
+    def __init__(
+        self,
+        on_level: LevelCallback | None = None,
+        on_limit: LimitCallback | None = None,
+    ) -> None:
+        self._process: asyncio.subprocess.Process | None = None
+        self._reader_task: asyncio.Task | None = None
+        self._buffer = bytearray()
         self._recording = False
+        self._limit_hit = False
+        self.max_duration: float = 120.0
+        self._on_level = on_level
+        self._on_limit = on_limit
 
     @property
     def is_recording(self) -> bool:
-        """Check if currently recording."""
         return self._recording
 
     @property
-    def audio_file(self) -> Optional[Path]:
-        """Get the path to the recorded audio file."""
-        return self._audio_file
+    def duration(self) -> float:
+        """Seconds of audio captured so far."""
+        return len(self._buffer) / BYTES_PER_SECOND
 
-    async def start(self) -> Path:
-        """Start recording audio from the default microphone.
-
-        Returns:
-            Path to the temporary WAV file being recorded.
+    async def start(self) -> None:
+        """Start capturing audio.
 
         Raises:
-            RuntimeError: If already recording or pw-record fails to start.
+            RecorderError: if already recording, pw-record is missing, or
+                pw-record exits immediately (no microphone / no session).
         """
         if self._recording:
-            raise RuntimeError("Already recording")
+            raise RecorderError("Already recording")
 
-        # Create temp file for audio
-        fd, path = tempfile.mkstemp(suffix=".wav", prefix="dictator_")
-        os.close(fd)
-        self._audio_file = Path(path)
+        self._buffer = bytearray()
+        self._limit_hit = False
 
-        # Start pw-record
-        # Format: 16-bit signed LE, 16kHz mono (optimal for Whisper)
         cmd = [
             "pw-record",
             "--format", "s16",
-            "--rate", "16000",
+            "--rate", str(SAMPLE_RATE),
             "--channels", "1",
-            str(self._audio_file),
+            "-",
         ]
-
         try:
             self._process = await asyncio.create_subprocess_exec(
                 *cmd,
-                stdout=asyncio.subprocess.DEVNULL,
+                stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            self._recording = True
-            return self._audio_file
         except FileNotFoundError:
-            self._cleanup_file()
-            raise RuntimeError(
-                "pw-record not found. Please install PipeWire: "
+            raise RecorderError(
+                "pw-record not found. Install PipeWire: "
                 "sudo apt install pipewire pipewire-audio-client-libraries"
             )
-        except Exception as e:
-            self._cleanup_file()
-            raise RuntimeError(f"Failed to start recording: {e}")
 
-    async def stop(self) -> Path:
-        """Stop recording and return the audio file path.
+        # Fail fast if pw-record dies right away (PipeWire down, no source).
+        try:
+            await asyncio.wait_for(self._process.wait(), timeout=STARTUP_GRACE_SECONDS)
+        except asyncio.TimeoutError:
+            pass  # still running — good
+        else:
+            stderr = b""
+            if self._process.stderr:
+                stderr = await self._process.stderr.read()
+            self._process = None
+            detail = stderr.decode(errors="replace").strip() or "unknown error"
+            raise RecorderError(f"Audio capture failed to start: {detail}")
 
-        Returns:
-            Path to the recorded WAV file.
+        self._recording = True
+        self._reader_task = asyncio.create_task(self._read_stream())
+        logger.info("Recording started (max %.0fs)", self.max_duration)
+
+    async def _read_stream(self) -> None:
+        """Drain pw-record stdout into the buffer, emitting level updates."""
+        assert self._process is not None and self._process.stdout is not None
+        max_bytes = int(self.max_duration * BYTES_PER_SECOND)
+        try:
+            while True:
+                chunk = await self._process.stdout.read(CHUNK_BYTES)
+                if not chunk:
+                    break
+                if len(self._buffer) < max_bytes:
+                    self._buffer.extend(chunk)
+                elif not self._limit_hit:
+                    self._limit_hit = True
+                    logger.warning("Max duration reached (%.0fs)", self.max_duration)
+                    if self._on_limit is not None:
+                        asyncio.ensure_future(self._on_limit())
+                if self._on_level is not None and self._recording:
+                    self._on_level(self._chunk_level(chunk))
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Audio stream reader failed")
+
+    @staticmethod
+    def _chunk_level(chunk: bytes) -> float:
+        """RMS level of a PCM chunk, normalized to 0.0–1.0."""
+        samples = np.frombuffer(chunk[: len(chunk) - len(chunk) % 2], dtype=np.int16)
+        if samples.size == 0:
+            return 0.0
+        rms = float(np.sqrt(np.mean(np.square(samples.astype(np.float64)))))
+        return min(1.0, rms / 32768.0)
+
+    async def stop(self) -> np.ndarray:
+        """Stop capturing and return the audio as float32 in [-1, 1].
 
         Raises:
-            RuntimeError: If not currently recording.
+            RecorderError: if not recording or no usable audio was captured.
         """
         if not self._recording or self._process is None:
-            raise RuntimeError("Not recording")
-
-        # Send SIGTERM to stop recording gracefully
-        self._process.terminate()
-
-        try:
-            # Wait for process to finish (with timeout)
-            await asyncio.wait_for(self._process.wait(), timeout=5.0)
-        except asyncio.TimeoutError:
-            # Force kill if it doesn't respond
-            self._process.kill()
-            await self._process.wait()
+            raise RecorderError("Not recording")
 
         self._recording = False
-        self._process = None
+        await self._shutdown_process(graceful=True)
 
-        if self._audio_file and self._audio_file.exists():
-            return self._audio_file
-        else:
-            raise RuntimeError("Recording failed: no audio file created")
+        if self.duration < MIN_AUDIO_SECONDS:
+            self._buffer = bytearray()
+            raise RecorderError("No audio captured — recording was too short")
+
+        pcm = bytes(self._buffer)
+        self._buffer = bytearray()
+        audio = np.frombuffer(pcm, dtype=np.int16).astype(np.float32) / 32768.0
+        logger.info("Recording stopped: %.1fs of audio", audio.size / SAMPLE_RATE)
+        return audio
 
     async def cancel(self) -> None:
-        """Cancel recording and clean up."""
-        if self._process is not None:
-            self._process.kill()
-            try:
-                await self._process.wait()
-            except Exception:
-                pass
-            self._process = None
-
+        """Abort recording and discard captured audio."""
         self._recording = False
-        self._cleanup_file()
+        if self._process is not None:
+            await self._shutdown_process(graceful=False)
+        self._buffer = bytearray()
+        logger.info("Recording cancelled")
 
-    def _cleanup_file(self) -> None:
-        """Remove the temporary audio file."""
-        if self._audio_file and self._audio_file.exists():
+    async def _shutdown_process(self, graceful: bool) -> None:
+        assert self._process is not None
+        try:
+            if graceful:
+                self._process.terminate()
+            else:
+                self._process.kill()
+        except ProcessLookupError:
+            pass
+
+        if self._reader_task is not None:
+            # Reader exits at stdout EOF once the process dies.
             try:
-                self._audio_file.unlink()
-            except Exception:
-                pass
-        self._audio_file = None
+                await asyncio.wait_for(self._reader_task, timeout=5.0)
+            except asyncio.TimeoutError:
+                self._reader_task.cancel()
+            self._reader_task = None
 
-    def cleanup(self) -> None:
-        """Clean up resources. Call after transcription is complete."""
-        self._cleanup_file()
+        try:
+            await asyncio.wait_for(self._process.wait(), timeout=5.0)
+        except asyncio.TimeoutError:
+            self._process.kill()
+            await self._process.wait()
+        self._process = None
