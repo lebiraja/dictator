@@ -1,0 +1,16 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["service/tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = ["build", "dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# dbus-next uses string literals ("s", "b", "a{sv}") as D-Bus type annotations
+"service/dictator_service.py" = ["F821", "F722"]

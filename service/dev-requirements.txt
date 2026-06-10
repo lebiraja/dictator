@@ -1,0 +1,5 @@
+pytest==9.0.3
+pytest-asyncio==1.4.0
+ruff==0.15.16
+numpy==2.2.6
+dbus-next==0.2.3
